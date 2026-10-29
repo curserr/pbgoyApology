@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Heartfelt Apology</title>
+<style>
+  :root {
+    --bg1: #ffd1e8;
+    --bg2: #c9b8ff;
+    --ink: #3a2147;
+    --yes: #ff4f9a;
+    --no: #6c6c8a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    background: linear-gradient(160deg, var(--bg1), var(--bg2));
+    color: var(--ink);
+    text-align: center;
+    padding: 20px 16px 120px;
+    overflow-x: hidden;
+  }
+
+  /* ---------- start overlay (needed so browsers allow audio) ---------- */
+  #start {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px;
+    background: rgba(58, 33, 71, 0.92);
+    color: #fff; font-size: 1.4rem; cursor: pointer;
+  }
+  #start button {
+    font-size: 1.2rem; padding: 14px 28px; border: 0; border-radius: 999px;
+    background: var(--yes); color: #fff; cursor: pointer;
+  }
+
+  /* ---------- video ---------- */
+  .video-wrap {
+    max-width: 720px; margin: 0 auto 28px;
+    border-radius: 18px; overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    background: #000;
+  }
+  video { display: block; width: 100%; height: auto; }
+
+  /* ---------- question ---------- */
+  h1 { font-size: clamp(1.4rem, 4vw, 2.2rem); margin: 0 auto 24px; max-width: 700px; line-height: 1.25; }
+  .buttons { display: flex; gap: 20px; justify-content: center; align-items: center; min-height: 70px; }
+  .btn {
+    font-size: 1.3rem; font-weight: 700; padding: 14px 36px;
+    border: 0; border-radius: 999px; color: #fff; cursor: pointer;
+    box-shadow: 0 6px 14px rgba(0,0,0,.2);
+    transition: transform .15s ease, left .25s ease, top .25s ease;
+  }
+  .btn:hover { transform: scale(1.06); }
+  #yes { background: var(--yes); }
+  #no  { background: var(--no); }
+  #no.running { position: fixed; z-index: 50; }
+
+  /* ---------- BAD GOYIM popup ---------- */
+  #badPopup {
+    position: fixed; left: 50%; top: 40%;
+    transform: translate(-50%, -50%) scale(.5);
+    z-index: 200; opacity: 0; pointer-events: none;
+    background: #fff; color: #d4143c;
+    font-size: clamp(2rem, 8vw, 4rem); font-weight: 900; letter-spacing: 2px;
+    padding: 20px 36px; border-radius: 20px;
+    border: 5px solid #d4143c;
+    box-shadow: 0 12px 40px rgba(0,0,0,.4);
+    white-space: nowrap;
+  }
+  #badPopup.show { animation: pop 1.1s ease forwards; }
+  @keyframes pop {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(.5) rotate(-6deg); }
+    15%  { opacity: 1; transform: translate(-50%, -50%) scale(1.1) rotate(4deg); }
+    30%  { transform: translate(-50%, -50%) scale(1) rotate(-3deg); }
+    80%  { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(.9); }
+  }
+
+  /* ---------- success state ---------- */
+  #success { display: none; }
+  #success h2 { font-size: clamp(1.6rem, 5vw, 2.6rem); margin: 10px 0; }
+  #success p  { font-size: 1.2rem; margin: 0; }
+
+  /* ---------- good kitten bar ---------- */
+  #goodKitten {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    padding: 18px 12px; font-size: 1.5rem; font-weight: 800;
+    background: #fff; color: var(--yes);
+    border-top: 4px solid var(--yes);
+    transform: translateY(110%);
+    transition: transform .6s cubic-bezier(.2,1.2,.4,1);
+  }
+  #goodKitten.show { transform: translateY(0); }
+
+  /* ---------- confetti ---------- */
+  .confetti {
+    position: fixed; top: -50px; z-index: 150; pointer-events: none;
+    animation: fall linear forwards;
+  }
+  @keyframes fall {
+    to { transform: translateY(115vh) rotate(720deg); opacity: .9; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Browsers block audio until the user interacts, so we start on this tap -->
+<div id="start">
+  <div>💌 Someone has something to say to you 💌</div>
+  <button id="startBtn">Tap to open</button>
+</div>
+
+<!-- ===================== VIDEO ===================== -->
+<div class="video-wrap">
+  <!-- Swap the source in CONFIG below. Needs a direct video file (.mp4/.webm), not a YouTube link. -->
+  <video id="video" autoplay muted loop playsinline></video>
+</div>
+
+<!-- ===================== QUESTION ===================== -->
+<div id="questionBlock">
+  <h1>Will you accept our heartfelt apology, pbgoy kitten?</h1>
+  <div class="buttons" id="buttons">
+    <button class="btn" id="yes">Yes 💖</button>
+    <button class="btn" id="no">No</button>
+  </div>
+</div>
+
+<!-- ===================== SUCCESS ===================== -->
+<div id="success">
+  <h2>Yay!! Thank you for forgiving us pbgoat 🥹💖</h2>
+  <p>Could we get like more streams maybe tehe</p>
+</div>
+
+<div id="badPopup">BAD GOYIM</div>
+<div id="goodKitten">🐱 Good kitten 🐱</div>
+
+<script>
+/* =========================================================
+   CONFIG — change these to your own files / links
+   ========================================================= */
+const CONFIG = {
+  videoUrl: "pbgoy-travis-video.mp4",              // direct link or file next to index.html
+  audioPlaylist: [
+    "pbgoy-ganome.mp4",                     // plays first
+    "pbgoy-louie.mp4"                      // plays when the first finishes
+  ],
+  confettiEmojis: ["🎉", "🎊", "💖", "✨", "🐱", "🎀", "💕", "🥳"],
+  confettiCount: 120
+};
+
+/* =========================================================
+   Elements
+   ========================================================= */
+const video      = document.getElementById("video");
+const yesBtn     = document.getElementById("yes");
+const noBtn      = document.getElementById("no");
+const badPopup   = document.getElementById("badPopup");
+const goodKitten = document.getElementById("goodKitten");
+const success    = document.getElementById("success");
+const question   = document.getElementById("questionBlock");
+const startOverlay = document.getElementById("start");
+
+video.src = CONFIG.videoUrl;
+
+/* =========================================================
+   Audio: one track at a time, next starts when one ends
+   ========================================================= */
+let trackIndex = 0;
+const player = new Audio();
+player.preload = "auto";
+
+function playTrack(i) {
+  trackIndex = i % CONFIG.audioPlaylist.length;
+  player.src = CONFIG.audioPlaylist[trackIndex];
+  player.play().catch(() => { /* blocked or file missing; ignore */ });
+}
+
+// When a track finishes, move to the next (wraps back to the first)
+player.addEventListener("ended", () => playTrack(trackIndex + 1));
+// If a file fails to load, skip to the next so the music never stalls
+player.addEventListener("error", () => {
+  if (CONFIG.audioPlaylist.length > 1) setTimeout(() => playTrack(trackIndex + 1), 500);
+});
+
+function begin() {
+  startOverlay.style.display = "none";
+  video.play().catch(() => {});
+  playTrack(0);
+}
+startOverlay.addEventListener("click", begin);
+
+/* =========================================================
+   NO button: runs away on every click, shows "BAD GOYIM"
+   ========================================================= */
+function showBadPopup() {
+  badPopup.classList.remove("show");
+  void badPopup.offsetWidth;          // restart the animation
+  badPopup.classList.add("show");
+}
+
+function moveNoButton() {
+  noBtn.classList.add("running");
+  const margin = 12;
+  const maxX = window.innerWidth  - noBtn.offsetWidth  - margin;
+  const maxY = window.innerHeight - noBtn.offsetHeight - margin;
+  noBtn.style.left = Math.max(margin, Math.random() * maxX) + "px";
+  noBtn.style.top  = Math.max(margin, Math.random() * maxY) + "px";
+}
+
+noBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  showBadPopup();
+  moveNoButton();
+});
+
+/* =========================================================
+   YES button: confetti, new message, good kitten bar
+   ========================================================= */
+function launchConfetti() {
+  for (let i = 0; i < CONFIG.confettiCount; i++) {
+    const el = document.createElement("div");
+    el.className = "confetti";
+    el.textContent = CONFIG.confettiEmojis[Math.floor(Math.random() * CONFIG.confettiEmojis.length)];
+    el.style.left = Math.random() * 100 + "vw";
+    el.style.fontSize = (18 + Math.random() * 28) + "px";
+    el.style.animationDuration = (2.5 + Math.random() * 3) + "s";
+    el.style.animationDelay = (Math.random() * 1.5) + "s";
+    document.body.appendChild(el);
+    el.addEventListener("animationend", () => el.remove());
+  }
+}
+
+yesBtn.addEventListener("click", () => {
+  question.style.display = "none";
+  noBtn.style.display = "none";
+  success.style.display = "block";
+  goodKitten.classList.add("show");
+  launchConfetti();
+  setTimeout(launchConfetti, 1800);   // second burst
+});
+</script>
+</body>
+</html>
